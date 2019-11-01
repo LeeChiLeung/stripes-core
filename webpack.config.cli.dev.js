@@ -7,10 +7,10 @@ const autoprefixer = require('autoprefixer');
 const postCssCustomProperties = require('postcss-custom-properties');
 const postCssCalc = require('postcss-calc');
 const postCssNesting = require('postcss-nesting');
+const postCssNested = require('postcss-nested');  // Yes, we need both of these
 const postCssCustomMedia = require('postcss-custom-media');
 const postCssMediaMinMax = require('postcss-media-minmax');
 const postCssColorFunction = require('postcss-color-function');
-const cloneDeep = require('lodash.clonedeep');
 
 const base = require('./webpack.config.base');
 const cli = require('./webpack.config.cli');
@@ -29,7 +29,9 @@ devConfig.plugins = devConfig.plugins.concat([
   new webpack.HotModuleReplacementPlugin(),
 ]);
 
-const cssConfig = [
+devConfig.module.rules.push({
+  test: /\.css$/,
+  use: [
     {
       loader: 'style-loader',
       options: {
@@ -63,22 +65,44 @@ const cssConfig = [
         sourceMap: true,
       },
     },
-];
-
-const cssConfig2 = cloneDeep(cssConfig);
-if (cssConfig2[1].options.modules) {
-  delete cssConfig2[1].options.modules;
-  // console.log('1', JSON.stringify(cssConfig2));
-} else {
-  throw 'no modules config for CSS';
-}
-
-devConfig.module.rules.push({
-  test: /\.css$/,
-  use: cssConfig,
-},{
+  ],
+}, {
   test: /\.global-css$/,
-  use: cssConfig2,
+  use: [
+    {
+      loader: 'style-loader',
+      options: {
+        sourceMap: true,
+      },
+    },
+    {
+      loader: 'css-loader',
+      options: {
+        localIdentName: '[local]---[hash:base64:5]',
+        modules: false,
+        sourceMap: true,
+        importLoaders: 1,
+      },
+    },
+    {
+      loader: 'postcss-loader',
+      options: {
+        plugins: () => [
+          postCssImport(),
+          autoprefixer(),
+          postCssCustomProperties({
+            preserve: false
+          }),
+          postCssCalc(),
+          postCssNested(),
+          postCssCustomMedia(),
+          postCssMediaMinMax(),
+          postCssColorFunction(),
+        ],
+        sourceMap: true,
+      },
+    },
+  ],
 });
 
 devConfig.module.rules.push(
