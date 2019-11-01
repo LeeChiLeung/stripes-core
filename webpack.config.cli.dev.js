@@ -10,6 +10,7 @@ const postCssNesting = require('postcss-nesting');
 const postCssCustomMedia = require('postcss-custom-media');
 const postCssMediaMinMax = require('postcss-media-minmax');
 const postCssColorFunction = require('postcss-color-function');
+const cloneDeep = require('lodash.clonedeep');
 
 const base = require('./webpack.config.base');
 const cli = require('./webpack.config.cli');
@@ -28,9 +29,7 @@ devConfig.plugins = devConfig.plugins.concat([
   new webpack.HotModuleReplacementPlugin(),
 ]);
 
-devConfig.module.rules.push({
-  test: /\.css$/,
-  use: [
+const cssConfig = [
     {
       loader: 'style-loader',
       options: {
@@ -64,7 +63,22 @@ devConfig.module.rules.push({
         sourceMap: true,
       },
     },
-  ],
+];
+
+const cssConfig2 = cloneDeep(cssConfig);
+if (cssConfig2[1].options.modules) {
+  delete cssConfig2[1].options.modules;
+  // console.log('1', JSON.stringify(cssConfig2));
+} else {
+  throw 'no modules config for CSS';
+}
+
+devConfig.module.rules.push({
+  test: /\.css$/,
+  use: cssConfig,
+},{
+  test: /\.global-css$/,
+  use: cssConfig2,
 });
 
 devConfig.module.rules.push(
